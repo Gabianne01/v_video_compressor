@@ -18,6 +18,7 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.Effects
 import androidx.media3.effect.Presentation
+import androidx.media3.effect.ScaleAndRotateTransformation
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
