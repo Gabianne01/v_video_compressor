@@ -1304,16 +1304,37 @@ class VVideoCompressionEngine(private val context: Context) {
         
               val videoEffects = mutableListOf<androidx.media3.common.Effect>()
 
-val safeWidth = (finalWidth / 16) * 16
-val safeHeight = (finalHeight / 16) * 16
+        // Compute safe scale factor — clamp within 1080p while preserving AR
+        val maxW = 1920f
+        val maxH = 1080f
+        var scaleFactor = 1f
 
-// scale/crop-to-fit for display
-val presentationEffect = Presentation.createForWidthAndHeight(
-    safeWidth,
-    safeHeight,
-    Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
-)
-videoEffects.add(presentationEffect)
+        if (finalHeight > maxH || finalWidth > maxW) {
+            val scaleByHeight = maxH / finalHeight
+            val scaleByWidth = maxW / finalWidth
+            scaleFactor = minOf(scaleByHeight, scaleByWidth)
+        }
+        if (scaleFactor < 0.01f || finalWidth * scaleFactor > 4000f) {
+        scaleFactor = 1f // safeguard against bad metadata or iOS overflows
+        }
+
+        // Apply a GPU-based scale transformation (auto-aligned, smear-free)
+        val scaleTransform = ScaleAndRotateTransformation.Builder()
+            .setScale(scaleFactor, scaleFactor)
+            .setRotationDegrees(0f) // Orientation auto-corrected by Transformer
+            .build()
+
+        videoEffects.add(scaleTransform)
+
+        // Optional: crop-to-fit if you want WhatsApp-like framing (remove if not needed)
+        /*
+        val presentation = Presentation.createForWidthAndHeight(
+            (finalWidth * scaleFactor).toInt(),
+            (finalHeight * scaleFactor).toInt(),
+            Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
+        )
+        videoEffects.add(presentation)
+        */
         
         // ORIENTATION FIX: Apply rotation if needed
         if (finalRotation != 0) {
