@@ -1308,10 +1308,17 @@ class VVideoCompressionEngine(private val context: Context) {
             mediaItem
         }
         
-val videoEffects = mutableListOf<androidx.media3.common.Effect>() 
-// Automatic GPU rescale (smear-free, adaptive) 
-val presentationEffect = Presentation.createForShortSide(720) 
-videoEffects.add(presentationEffect)
+val safeWidth = (finalWidth / 16) * 16
+val safeHeight = (finalHeight / 16) * 16
+
+// Crop or fit safely to prevent padded edge garbage
+val presentationSafe = Presentation.createForWidthAndHeight(
+    safeWidth,
+    safeHeight,
+    Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
+)
+
+videoEffects.add(presentationSafe)
       
         // ORIENTATION FIX: Apply rotation if needed
         if (finalRotation != 0) {
