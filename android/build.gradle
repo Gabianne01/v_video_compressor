@@ -52,9 +52,9 @@ android {
         testImplementation("org.mockito:mockito-core:5.0.0")
         
         // Media3 dependencies for video compression - only what we need
-        implementation("androidx.media3:media3-transformer:1.4.1")
-        implementation("androidx.media3:media3-common:1.4.1")
-        implementation("androidx.media3:media3-effect:1.4.1")
+        implementation("androidx.media3:media3-transformer:1.8.0")
+        implementation("androidx.media3:media3-common:1.8.0")
+        implementation("androidx.media3:media3-effect:1.8.0")
         // Essential Android dependencies
         implementation("androidx.core:core-ktx:1.15.0")
         

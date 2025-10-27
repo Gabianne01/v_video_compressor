@@ -8,13 +8,21 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
+
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Presentation
+import androidx.media3.effect.ScaleAndRotateTransformation
 import androidx.media3.transformer.Composition
+import androidx.media3.transformer.DefaultEncoderFactory      // ✅ new in v1.8.0
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.EditedMediaItemSequence
+import androidx.media3.transformer.Effects
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.TransformationRequest
 import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.Effects
 import androidx.media3.effect.Presentation
@@ -1303,40 +1311,11 @@ class VVideoCompressionEngine(private val context: Context) {
             mediaItem
         }
         
-              val videoEffects = mutableListOf<androidx.media3.common.Effect>()
-
-        // Compute safe scale factor — clamp within 1080p while preserving AR
-        val maxW = 1920f
-        val maxH = 1080f
-        var scaleFactor = 1f
-
-        if (finalHeight > maxH || finalWidth > maxW) {
-            val scaleByHeight = maxH / finalHeight
-            val scaleByWidth = maxW / finalWidth
-            scaleFactor = minOf(scaleByHeight, scaleByWidth)
-        }
-        if (scaleFactor < 0.01f || finalWidth * scaleFactor > 4000f) {
-        scaleFactor = 1f // safeguard against bad metadata or iOS overflows
-        }
-
-        // Apply a GPU-based scale transformation (auto-aligned, smear-free)
-        val scaleTransform = ScaleAndRotateTransformation.Builder()
-            .setScale(scaleFactor, scaleFactor)
-            .setRotationDegrees(0f) // Orientation auto-corrected by Transformer
-            .build()
-
-        videoEffects.add(scaleTransform)
-
-        // Optional: crop-to-fit if you want WhatsApp-like framing (remove if not needed)
-        /*
-        val presentation = Presentation.createForWidthAndHeight(
-            (finalWidth * scaleFactor).toInt(),
-            (finalHeight * scaleFactor).toInt(),
-            Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
-        )
-        videoEffects.add(presentation)
-        */
-        
+val videoEffects = mutableListOf<androidx.media3.common.Effect>() 
+// Automatic GPU rescale (smear-free, adaptive) 
+val presentationEffect = Presentation.createForShortSide(720) 
+videoEffects.add(presentationEffect)
+      
         // ORIENTATION FIX: Apply rotation if needed
         if (finalRotation != 0) {
             // Note: Media3 rotation effects require additional implementation
