@@ -1307,7 +1307,8 @@ class VVideoCompressionEngine(private val context: Context) {
         } else {
             mediaItem
         }
-        
+ val videoEffects = mutableListOf<androidx.media3.common.Effect>()
+
 val safeWidth = (finalWidth / 16) * 16
 val safeHeight = (finalHeight / 16) * 16
 
