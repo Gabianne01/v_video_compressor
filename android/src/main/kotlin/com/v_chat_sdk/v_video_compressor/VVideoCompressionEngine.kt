@@ -535,50 +535,65 @@ class VVideoCompressionEngine(private val context: Context) {
     /**
      * Gets video information from file path
      */
+     
     fun getVideoInfo(videoPath: String): VVideoInfo? {
-        var retriever: MediaMetadataRetriever? = null
-        return try {
+    var retriever: MediaMetadataRetriever? = null
+    return try {
+        retriever = MediaMetadataRetriever()
+
+        val uri = Uri.parse(videoPath)
+        if (videoPath.startsWith("content://")) {
+            // ✅ Handle content URIs (from ImagePicker / Photo Picker)
+            retriever.setDataSource(context, uri)
+        } else {
+            // ✅ Handle normal file paths
             val file = File(videoPath)
             if (!file.exists()) return null
-            
-            retriever = MediaMetadataRetriever()
             retriever.setDataSource(videoPath)
-            
-            val name = file.name
-            val fileSizeBytes = file.length()
-            val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-            val durationMillis = durationStr?.toLongOrNull() ?: 0L
-            
-            // ORIENTATION FIX: Extract raw dimensions and rotation metadata
-            val widthStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
-            val heightStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
-            val rotationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
-            
-            val rawWidth = widthStr?.toIntOrNull() ?: 0
-            val rawHeight = heightStr?.toIntOrNull() ?: 0
-            val rotation = rotationStr?.toIntOrNull() ?: 0
-            
-            // ORIENTATION FIX: Apply rotation to get correct display dimensions
-            val (displayWidth, displayHeight) = when (rotation) {
-                90, 270 -> Pair(rawHeight, rawWidth) // Swap dimensions for portrait videos
-                else -> Pair(rawWidth, rawHeight) // Keep original for landscape
-            }
-            
-            VVideoInfo(
-                path = videoPath,
-                name = name,
-                fileSizeBytes = fileSizeBytes,
-                durationMillis = durationMillis,
-                width = displayWidth,
-                height = displayHeight
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        } finally {
-            retriever?.release()
         }
+
+        val name = uri.lastPathSegment ?: File(videoPath).name
+        val fileSizeBytes = try {
+            if (videoPath.startsWith("content://")) {
+                context.contentResolver.openFileDescriptor(uri, "r")?.statSize ?: 0
+            } else {
+                File(videoPath).length()
+            }
+        } catch (e: Exception) {
+            0
+        }
+
+        val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        val durationMillis = durationStr?.toLongOrNull() ?: 0L
+
+        val widthStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+        val heightStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+        val rotationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+
+        val rawWidth = widthStr?.toIntOrNull() ?: 0
+        val rawHeight = heightStr?.toIntOrNull() ?: 0
+        val rotation = rotationStr?.toIntOrNull() ?: 0
+
+        val (displayWidth, displayHeight) = when (rotation) {
+            90, 270 -> Pair(rawHeight, rawWidth)
+            else -> Pair(rawWidth, rawHeight)
+        }
+
+        VVideoInfo(
+            path = videoPath,
+            name = name,
+            fileSizeBytes = fileSizeBytes,
+            durationMillis = durationMillis,
+            width = displayWidth,
+            height = displayHeight
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    } finally {
+        retriever?.release()
     }
+}
     
     /**
      * ORIENTATION FIX: Helper method to detect video rotation from file metadata
