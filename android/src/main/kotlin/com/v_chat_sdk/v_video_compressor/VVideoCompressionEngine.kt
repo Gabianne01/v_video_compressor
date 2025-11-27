@@ -1302,15 +1302,19 @@ class VVideoCompressionEngine(private val context: Context) {
             mediaItem
         }
         
-        val videoEffects = mutableListOf<androidx.media3.common.Effect>()
-        
-        // Add presentation effect with properly calculated dimensions
-        val presentationEffect = Presentation.createForWidthAndHeight(
-            finalWidth,
-            finalHeight,
-            Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP  // Better aspect ratio handling
-        )
-        videoEffects.add(presentationEffect)
+             val videoEffects = mutableListOf<androidx.media3.common.Effect>()
+
+val safeWidth = (finalWidth / 16) * 16
+val safeHeight = (finalHeight / 16) * 16
+
+// scale/crop-to-fit for display
+val presentationEffect = Presentation.createForWidthAndHeight(
+    safeWidth,
+    safeHeight,
+    Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP
+)
+videoEffects.add(presentationEffect)
+
         
         // ORIENTATION FIX: Apply rotation if needed
         if (finalRotation != 0) {
